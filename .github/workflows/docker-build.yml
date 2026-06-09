@@ -15,8 +15,8 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build Docker image
-        run: docker build -t ghcr.io/${{ github.repository }}/train1-app:latest .
+		- name: Build Docker image
+  		run: docker build -t ghcr.io/${{ github.repository_owner }}/train1-app:latest .
 
-      - name: Push Docker image
-        run: docker push ghcr.io/${{ github.repository }}/train1-app:latest
+		- name: Push Docker image
+ 	 	run: docker push ghcr.io/${{ github.repository_owner }}/train1-app:latest
