@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: train1-app
+  namespace: train1
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: train1-app
+
+  template:
+    metadata:
+      labels:
+        app: train1-app
+
+    spec:
+      containers:
+      - name: train1-app
+        image: sin.ocir.io/axrbgxv6g86f/dev_repo:latest
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: 80
