@@ -48,32 +48,32 @@ jobs:
     # 5. Setup kubeconfig (IMPORTANT PART)
     # -------------------------
     - name: Setup Kubeconfig
-      run: |
-        mkdir -p ~/.kube
+  run: |
+    mkdir -p ~/.kube
 
-        cat <<EOF > ~/.kube/config
-        apiVersion: v1
-        kind: Config
+    cat > ~/.kube/config <<EOF
+apiVersion: v1
+kind: Config
 
-        clusters:
-        - cluster:
-            server: ${{ secrets.K8S_SERVER }}
-            certificate-authority-data: ${{ secrets.K8S_CA_CRT }}
-          name: oke
+clusters:
+- name: oke
+  cluster:
+    server: ${{ secrets.K8S_SERVER }}
+    certificate-authority-data: "${{ secrets.K8S_CA_CRT }}"
 
-        contexts:
-        - context:
-            cluster: oke
-            user: github
-          name: oke-context
+contexts:
+- name: oke-context
+  context:
+    cluster: oke
+    user: github
 
-        current-context: oke-context
+current-context: oke-context
 
-        users:
-        - name: github
-          user:
-            token: ${{ secrets.K8S_TOKEN }}
-        EOF
+users:
+- name: github
+  user:
+    token: "${{ secrets.K8S_TOKEN }}"
+EOF
 
     # -------------------------
     # 6. Verify cluster access
