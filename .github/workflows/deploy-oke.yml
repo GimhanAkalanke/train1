@@ -48,18 +48,16 @@ jobs:
     # 5. Setup kubeconfig (SAFE VERSION)
     # -------------------------
     - name: Setup Kubeconfig
-      run: |
-        mkdir -p ~/.kube
+  run: |
+    mkdir -p ~/.kube
 
-        cat > ~/.kube/config <<EOF
-apiVersion: v1
+    echo "apiVersion: v1
 kind: Config
-
 clusters:
 - name: oke
   cluster:
-    server: "${{ secrets.K8S_SERVER }}"
-    certificate-authority-data: "${{ secrets.K8S_CA_CRT }}"
+    server: \"${{ secrets.K8S_SERVER }}\"
+    certificate-authority-data: \"${{ secrets.K8S_CA_CRT }}\"
 
 contexts:
 - name: oke-context
@@ -72,8 +70,7 @@ current-context: oke-context
 users:
 - name: github
   user:
-    token: "${{ secrets.K8S_TOKEN }}"
-EOF
+    token: \"${{ secrets.K8S_TOKEN }}\"" > ~/.kube/config
 
     # -------------------------
     # 6. Test Kubernetes access
