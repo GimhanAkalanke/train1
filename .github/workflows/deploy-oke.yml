@@ -51,26 +51,18 @@ jobs:
   run: |
     mkdir -p ~/.kube
 
-    echo "apiVersion: v1
-kind: Config
-clusters:
-- name: oke
-  cluster:
-    server: \"${{ secrets.K8S_SERVER }}\"
-    certificate-authority-data: \"${{ secrets.K8S_CA_CRT }}\"
+    kubectl config set-cluster oke \
+      --server="${{ secrets.K8S_SERVER }}" \
+      --certificate-authority=<(echo "${{ secrets.K8S_CA_CRT }}")
 
-contexts:
-- name: oke-context
-  context:
-    cluster: oke
-    user: github
+    kubectl config set-credentials github \
+      --token="${{ secrets.K8S_TOKEN }}"
 
-current-context: oke-context
+    kubectl config set-context oke-context \
+      --cluster=oke \
+      --user=github
 
-users:
-- name: github
-  user:
-    token: \"${{ secrets.K8S_TOKEN }}\"" > ~/.kube/config
+    kubectl config use-context oke-context
 
     # -------------------------
     # 6. Test Kubernetes access
