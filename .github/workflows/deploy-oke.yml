@@ -14,44 +14,44 @@ jobs:
 
     steps:
 
-    # -------------------------
-    # 1. Checkout code
-    # -------------------------
+    # -----------------------------------
+    # 1. Checkout source code
+    # -----------------------------------
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # -------------------------
+    # -----------------------------------
     # 2. Login to OCIR
-    # -------------------------
+    # -----------------------------------
     - name: Login to OCIR
       run: |
         echo "${{ secrets.OCIR_AUTH_TOKEN }}" | docker login sin.ocir.io \
         -u "${{ secrets.OCIR_USERNAME }}" \
         --password-stdin
 
-    # -------------------------
-    # 3. Build Image
-    # -------------------------
+    # -----------------------------------
+    # 3. Build Docker Image
+    # -----------------------------------
     - name: Build Image
       run: |
         docker build \
           -t sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }} .
 
-    # -------------------------
-    # 4. Push Image
-    # -------------------------
+    # -----------------------------------
+    # 4. Push Docker Image
+    # -----------------------------------
     - name: Push Image
       run: |
         docker push sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}
 
-    # -------------------------
-    # 5. Setup kubeconfig (IMPORTANT PART)
-    # -------------------------
+    # -----------------------------------
+    # 5. Setup kubeconfig (FIXED VERSION)
+    # -----------------------------------
     - name: Setup Kubeconfig
-  run: |
-    mkdir -p ~/.kube
+      run: |
+        mkdir -p ~/.kube
 
-    cat > ~/.kube/config <<EOF
+        cat > ~/.kube/config <<EOF
 apiVersion: v1
 kind: Config
 
@@ -75,26 +75,26 @@ users:
     token: "${{ secrets.K8S_TOKEN }}"
 EOF
 
-    # -------------------------
-    # 6. Verify cluster access
-    # -------------------------
-    - name: Test Kubernetes Access
+    # -----------------------------------
+    # 6. Test Kubernetes access
+    # -----------------------------------
+    - name: Test Cluster Access
       run: |
         kubectl get nodes
         kubectl get ns
 
-    # -------------------------
+    # -----------------------------------
     # 7. Deploy to OKE
-    # -------------------------
-    - name: Deploy to OKE
+    # -----------------------------------
+    - name: Deploy Application
       run: |
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
 
-    # -------------------------
-    # 8. Check rollout
-    # -------------------------
-    - name: Check Deployment
+    # -----------------------------------
+    # 8. Verify rollout
+    # -----------------------------------
+    - name: Verify Deployment
       run: |
         kubectl rollout status deployment/train1-app -n train1
         kubectl get pods -n train1
