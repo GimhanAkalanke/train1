@@ -1,0 +1,38 @@
+name: Manual Build and Push to OCIR
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image Tag'
+        required: true
+        default: 'latest'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Login to OCIR
+        run: |
+          echo "${{ secrets.OCIR_AUTH_TOKEN }}" | docker login sin.ocir.io \
+          -u "${{ secrets.OCIR_USERNAME }}" \
+          --password-stdin
+
+      - name: Build Image
+        run: |
+          docker build \
+            -t sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }} .
+
+      - name: Push Image
+        run: |
+          docker push \
+            sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}
+
+      - name: Display Image Name
+        run: |
+          echo "Image:"
+          echo "sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}"
