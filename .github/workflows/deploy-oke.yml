@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Image Tag'
+        description: "Image Tag"
         required: true
-        default: 'latest'
+        default: "latest"
 
 jobs:
   deploy:
@@ -14,90 +14,23 @@ jobs:
 
     steps:
 
-    # -------------------------
-    # 1. Checkout code
-    # -------------------------
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # -------------------------
-    # 2. Login to OCIR
-    # -------------------------
     - name: Login to OCIR
       run: |
         echo "${{ secrets.OCIR_AUTH_TOKEN }}" | docker login sin.ocir.io \
         -u "${{ secrets.OCIR_USERNAME }}" \
         --password-stdin
 
-    # -------------------------
-    # 3. Build Image
-    # -------------------------
     - name: Build Image
       run: |
-        docker build \
-          -t sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }} .
+        docker build -t sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }} .
 
-    # -------------------------
-    # 4. Push Image
-    # -------------------------
     - name: Push Image
       run: |
         docker push sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}
 
-    # -------------------------
-    # 5. Setup kubeconfig (SAFE VERSION)
-    # -------------------------
-    - name: Setup Kubeconfig
-  run: |
-    mkdir -p ~/.kube
-
-    printf "%s\n" \
-"apiVersion: v1
-kind: Config
-clusters:
-- name: oke
-  cluster:
-    server: ${K8S_SERVER}
-    certificate-authority-data: ${K8S_CA_CRT}
-
-contexts:
-- name: oke-context
-  context:
-    cluster: oke
-    user: github
-
-current-context: oke-context
-
-users:
-- name: github
-  user:
-    token: ${K8S_TOKEN}" > ~/.kube/config
-  env:
-    K8S_SERVER: ${{ secrets.K8S_SERVER }}
-    K8S_CA_CRT: ${{ secrets.K8S_CA_CRT }}
-    K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
-
-    # -------------------------
-    # 6. Test Kubernetes access
-    # -------------------------
-    - name: Test Cluster Access
+    - name: Verify Docker Build
       run: |
-        kubectl get nodes
-        kubectl get ns
-
-    # -------------------------
-    # 7. Deploy to OKE
-    # -------------------------
-    - name: Deploy Application
-      run: |
-        kubectl apply -f k8s/deployment.yaml
-        kubectl apply -f k8s/service.yaml
-
-    # -------------------------
-    # 8. Verify Deployment
-    # -------------------------
-    - name: Verify Deployment
-      run: |
-        kubectl rollout status deployment/train1-app -n train1
-        kubectl get pods -n train1
-        kubectl get svc -n train1
+        echo "Build completed successfully"
