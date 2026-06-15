@@ -1,0 +1,101 @@
+name: Build Push Deploy to OKE
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image Tag'
+        required: true
+        default: 'latest'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # -------------------------
+    # 1. Checkout code
+    # -------------------------
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # -------------------------
+    # 2. Login to OCIR
+    # -------------------------
+    - name: Login to OCIR
+      run: |
+        echo "${{ secrets.OCIR_AUTH_TOKEN }}" | docker login sin.ocir.io \
+        -u "${{ secrets.OCIR_USERNAME }}" \
+        --password-stdin
+
+    # -------------------------
+    # 3. Build Image
+    # -------------------------
+    - name: Build Image
+      run: |
+        docker build \
+          -t sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }} .
+
+    # -------------------------
+    # 4. Push Image
+    # -------------------------
+    - name: Push Image
+      run: |
+        docker push sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}
+
+    # -------------------------
+    # 5. Setup kubeconfig (IMPORTANT PART)
+    # -------------------------
+    - name: Setup Kubeconfig
+      run: |
+        mkdir -p ~/.kube
+
+        cat <<EOF > ~/.kube/config
+        apiVersion: v1
+        kind: Config
+
+        clusters:
+        - cluster:
+            server: ${{ secrets.K8S_SERVER }}
+            certificate-authority-data: ${{ secrets.K8S_CA_CRT }}
+          name: oke
+
+        contexts:
+        - context:
+            cluster: oke
+            user: github
+          name: oke-context
+
+        current-context: oke-context
+
+        users:
+        - name: github
+          user:
+            token: ${{ secrets.K8S_TOKEN }}
+        EOF
+
+    # -------------------------
+    # 6. Verify cluster access
+    # -------------------------
+    - name: Test Kubernetes Access
+      run: |
+        kubectl get nodes
+        kubectl get ns
+
+    # -------------------------
+    # 7. Deploy to OKE
+    # -------------------------
+    - name: Deploy to OKE
+      run: |
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+
+    # -------------------------
+    # 8. Check rollout
+    # -------------------------
+    - name: Check Deployment
+      run: |
+        kubectl rollout status deployment/train1-app -n train1
+        kubectl get pods -n train1
+        kubectl get svc -n train1
