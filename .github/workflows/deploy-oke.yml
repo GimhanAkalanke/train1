@@ -55,7 +55,7 @@ jobs:
         docker push sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}
 
     # -------------------------
-    # 6. Setup kubeconfig (FIXED INDENTATION)
+    # 6. Setup kubeconfig (STRICT REFORMATTING)
     # -------------------------
     - name: Setup kubeconfig
       env:
@@ -64,7 +64,7 @@ jobs:
         K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
       run: |
         mkdir -p ~/.kube
-        cat << 'EOF' > ~/.kube/config
+        cat << 'EOF' | sed 's/^        //' > ~/.kube/config
         apiVersion: v1
         kind: Config
         clusters:
