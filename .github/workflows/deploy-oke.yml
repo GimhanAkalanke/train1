@@ -36,8 +36,8 @@ jobs:
     - name: Login to OCIR
       run: |
         echo "${{ secrets.OCIR_AUTH_TOKEN }}" | docker login sin.ocir.io \
-        -u "${{ secrets.OCIR_USERNAME }}" \
-        --password-stdin
+          -u "${{ secrets.OCIR_USERNAME }}" \
+          --password-stdin
 
     # -------------------------
     # 4. Build Image
@@ -55,7 +55,7 @@ jobs:
         docker push sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}
 
     # -------------------------
-    # 6. Setup kubeconfig (SAFE)
+    # 6. Setup kubeconfig (FIXED INDENTATION)
     # -------------------------
     - name: Setup kubeconfig
       env:
@@ -65,24 +65,24 @@ jobs:
       run: |
         mkdir -p ~/.kube
         cat << 'EOF' > ~/.kube/config
-apiVersion: v1
-kind: Config
-clusters:
-- name: oke
-  cluster:
-    server: ${{ env.K8S_SERVER }}
-    certificate-authority-data: ${{ env.K8S_CA_CRT }}
-contexts:
-- name: oke
-  context:
-    cluster: oke
-    user: github
-current-context: oke
-users:
-- name: github
-  user:
-    token: ${{ env.K8S_TOKEN }}
-EOF
+        apiVersion: v1
+        kind: Config
+        clusters:
+        - name: oke
+          cluster:
+            server: ${{ env.K8S_SERVER }}
+            certificate-authority-data: ${{ env.K8S_CA_CRT }}
+        contexts:
+        - name: oke
+          context:
+            cluster: oke
+            user: github
+        current-context: oke
+        users:
+        - name: github
+          user:
+            token: ${{ env.K8S_TOKEN }}
+        EOF
         chmod 600 ~/.kube/config
 
     # -------------------------
