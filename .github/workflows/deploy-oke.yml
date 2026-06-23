@@ -36,3 +36,35 @@ jobs:
       - name: Push Image
         run: |
           docker push sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}
+      - name: Setup kubeconfig
+        env:
+          K8S_SERVER: ${{ secrets.K8S_SERVER }}
+          K8S_CA_CRT: ${{ secrets.K8S_CA_CRT }}
+          K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
+        run: |
+          mkdir -p ~/.kube
+
+          printf '%s\n' \
+"apiVersion: v1
+kind: Config
+clusters:
+- name: oke
+  cluster:
+    server: ${K8S_SERVER}
+    certificate-authority-data: ${K8S_CA_CRT}
+contexts:
+- name: oke
+  context:
+    cluster: oke
+    user: github
+current-context: oke
+users:
+- name: github
+  user:
+    token: ${K8S_TOKEN}" > ~/.kube/config
+
+      - name: Test OKE connection
+        run: |
+          kubectl version --client
+          kubectl get nodes
+          kubectl get ns
