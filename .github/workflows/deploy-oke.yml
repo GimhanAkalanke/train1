@@ -13,15 +13,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
     # -------------------------
-    # Checkout
+    # 1. Checkout
     # -------------------------
     - name: Checkout Code
       uses: actions/checkout@v4
 
     # -------------------------
-    # Install OCI CLI
+    # 2. Install OCI CLI
     # -------------------------
     - name: Install OCI CLI
       run: |
@@ -31,37 +30,40 @@ jobs:
         oci --version
 
     # -------------------------
-    # Configure OCI CLI
+    # 3. Configure OCI CLI (FIXED SYNTAX)
     # -------------------------
     - name: Configure OCI CLI
+      env:
+        OCI_CONFIG_DATA: |
+          [DEFAULT]
+          user=${{ secrets.OCI_USER_OCID }}
+          fingerprint=${{ secrets.OCI_FINGERPRINT }}
+          tenancy=${{ secrets.OCI_TENANCY_OCID }}
+          region=${{ secrets.OCI_REGION }}
+          key_content="${{ secrets.OCI_KEY_CONTENT }}"
       run: |
         mkdir -p ~/.oci
-
-        cat > ~/.oci/config <<EOF
-[DEFAULT]
-user=${{ secrets.OCI_USER_OCID }}
-fingerprint=${{ secrets.OCI_FINGERPRINT }}
-tenancy=${{ secrets.OCI_TENANCY_OCID }}
-region=${{ secrets.OCI_REGION }}
-key_content=${{ secrets.OCI_KEY_CONTENT }}
-EOF
+        echo "$OCI_CONFIG_DATA" > ~/.oci/config
+        chmod 600 ~/.oci/config
 
     # -------------------------
-    # Generate kubeconfig (OKE)
+    # 4. Generate kubeconfig (OKE)
     # -------------------------
     - name: Generate kubeconfig
       run: |
         mkdir -p $HOME/.kube
-
+        # Explicitly source the path just in case the runner path update hasn't propagated inside this step execution environment
+        export PATH=$HOME/bin:$PATH
         oci ce cluster create-kubeconfig \
           --cluster-id ${{ secrets.OKE_CLUSTER_ID }} \
           --file $HOME/.kube/config \
           --region ${{ secrets.OCI_REGION }} \
           --token-version 2.0.0 \
           --kube-endpoint PUBLIC_ENDPOINT
+        chmod 600 $HOME/.kube/config
 
     # -------------------------
-    # Test cluster access
+    # 5. Test cluster access
     # -------------------------
     - name: Test OKE
       run: |
