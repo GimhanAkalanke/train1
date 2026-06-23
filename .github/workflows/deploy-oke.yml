@@ -58,15 +58,15 @@ jobs:
     # 6. Setup kubeconfig (SAFE)
     # -------------------------
     - name: Setup kubeconfig
-      env:
-        K8S_SERVER: ${{ secrets.K8S_SERVER }}
-        K8S_CA_CRT: ${{ secrets.K8S_CA_CRT }}
-        K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
-      run: |
-        mkdir -p ~/.kube
+  env:
+    K8S_SERVER: ${{ secrets.K8S_SERVER }}
+    K8S_CA_CRT: ${{ secrets.K8S_CA_CRT }}
+    K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
+  run: |
+    mkdir -p ~/.kube
 
-        cat <<EOF > ~/.kube/config
-apiVersion: v1
+    printf "%s\n" \
+"apiVersion: v1
 kind: Config
 
 clusters:
@@ -86,8 +86,7 @@ current-context: oke
 users:
 - name: github
   user:
-    token: ${K8S_TOKEN}
-EOF
+    token: ${K8S_TOKEN}" > ~/.kube/config
 
     # -------------------------
     # 7. Test cluster access
