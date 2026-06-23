@@ -65,24 +65,24 @@ jobs:
       run: |
         mkdir -p ~/.kube
         cat << 'EOF' > ~/.kube/config
-        apiVersion: v1
-        kind: Config
-        clusters:
-        - name: oke
-          cluster:
-            server: ${{ env.K8S_SERVER }}
-            certificate-authority-data: ${{ env.K8S_CA_CRT }}
-        contexts:
-        - name: oke
-          context:
-            cluster: oke
-            user: github
-        current-context: oke
-        users:
-        - name: github
-          user:
-            token: ${{ env.K8S_TOKEN }}
-        EOF
+apiVersion: v1
+kind: Config
+clusters:
+- name: oke
+  cluster:
+    server: ${{ env.K8S_SERVER }}
+    certificate-authority-data: ${{ env.K8S_CA_CRT }}
+contexts:
+- name: oke
+  context:
+    cluster: oke
+    user: github
+current-context: oke
+users:
+- name: github
+  user:
+    token: ${{ env.K8S_TOKEN }}
+EOF
         chmod 600 ~/.kube/config
 
     # -------------------------
