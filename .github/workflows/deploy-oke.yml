@@ -55,7 +55,7 @@ jobs:
         docker push sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}
 
     # -------------------------
-    # 6. Setup kubeconfig (STRICT REFORMATTING)
+    # 6. Setup kubeconfig (FOOLPROOF VERSION)
     # -------------------------
     - name: Setup kubeconfig
       env:
@@ -64,25 +64,23 @@ jobs:
         K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
       run: |
         mkdir -p ~/.kube
-        cat << 'EOF' | sed 's/^        //' > ~/.kube/config
-        apiVersion: v1
-        kind: Config
-        clusters:
-        - name: oke
-          cluster:
-            server: ${{ env.K8S_SERVER }}
-            certificate-authority-data: ${{ env.K8S_CA_CRT }}
-        contexts:
-        - name: oke
-          context:
-            cluster: oke
-            user: github
-        current-context: oke
-        users:
-        - name: github
-          user:
-            token: ${{ env.K8S_TOKEN }}
-        EOF
+        echo "apiVersion: v1" > ~/.kube/config
+        echo "kind: Config" >> ~/.kube/config
+        echo "clusters:" >> ~/.kube/config
+        echo "- name: oke" >> ~/.kube/config
+        echo "  cluster:" >> ~/.kube/config
+        echo "    server: ${K8S_SERVER}" >> ~/.kube/config
+        echo "    certificate-authority-data: ${K8S_CA_CRT}" >> ~/.kube/config
+        echo "contexts:" >> ~/.kube/config
+        echo "- name: oke" >> ~/.kube/config
+        echo "  context:" >> ~/.kube/config
+        echo "    cluster: oke" >> ~/.kube/config
+        echo "    user: github" >> ~/.kube/config
+        echo "current-context: oke" >> ~/.kube/config
+        echo "users:" >> ~/.kube/config
+        echo "- name: github" >> ~/.kube/config
+        echo "  user:" >> ~/.kube/config
+        echo "    token: ${K8S_TOKEN}" >> ~/.kube/config
         chmod 600 ~/.kube/config
 
     # -------------------------
