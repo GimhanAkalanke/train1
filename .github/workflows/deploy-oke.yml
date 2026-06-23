@@ -15,96 +15,56 @@ jobs:
     steps:
 
     # -------------------------
-    # 1. Checkout
+    # Checkout
     # -------------------------
     - name: Checkout Code
       uses: actions/checkout@v4
 
     # -------------------------
-    # 2. Install kubectl
+    # Install OCI CLI
     # -------------------------
-    - name: Install kubectl
+    - name: Install OCI CLI
       run: |
-        curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-        chmod +x kubectl
-        sudo mv kubectl /usr/local/bin/
-        kubectl version --client
+        bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)" --accept-all-defaults
+        echo "$HOME/bin" >> $GITHUB_PATH
+        export PATH=$HOME/bin:$PATH
+        oci --version
 
     # -------------------------
-    # 3. Login to OCIR
+    # Configure OCI CLI
     # -------------------------
-    - name: Login to OCIR
+    - name: Configure OCI CLI
       run: |
-        echo "${{ secrets.OCIR_AUTH_TOKEN }}" | docker login sin.ocir.io \
-          -u "${{ secrets.OCIR_USERNAME }}" \
-          --password-stdin
+        mkdir -p ~/.oci
+
+        cat > ~/.oci/config <<EOF
+[DEFAULT]
+user=${{ secrets.OCI_USER_OCID }}
+fingerprint=${{ secrets.OCI_FINGERPRINT }}
+tenancy=${{ secrets.OCI_TENANCY_OCID }}
+region=${{ secrets.OCI_REGION }}
+key_content=${{ secrets.OCI_KEY_CONTENT }}
+EOF
 
     # -------------------------
-    # 4. Build Image
+    # Generate kubeconfig (OKE)
     # -------------------------
-    - name: Build Image
+    - name: Generate kubeconfig
       run: |
-        docker build \
-          -t sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }} .
+        mkdir -p $HOME/.kube
+
+        oci ce cluster create-kubeconfig \
+          --cluster-id ${{ secrets.OKE_CLUSTER_ID }} \
+          --file $HOME/.kube/config \
+          --region ${{ secrets.OCI_REGION }} \
+          --token-version 2.0.0 \
+          --kube-endpoint PUBLIC_ENDPOINT
 
     # -------------------------
-    # 5. Push Image
+    # Test cluster access
     # -------------------------
-    - name: Push Image
-      run: |
-        docker push sin.ocir.io/axrbgxv6g86f/dev_repo:${{ github.event.inputs.image_tag }}
-
-    # -------------------------
-    # 6. Setup kubeconfig (FOOLPROOF VERSION)
-    # -------------------------
-    - name: Setup kubeconfig
-      env:
-        K8S_SERVER: ${{ secrets.K8S_SERVER }}
-        K8S_CA_CRT: ${{ secrets.K8S_CA_CRT }}
-        K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
-      run: |
-        mkdir -p ~/.kube
-        echo "apiVersion: v1" > ~/.kube/config
-        echo "kind: Config" >> ~/.kube/config
-        echo "clusters:" >> ~/.kube/config
-        echo "- name: oke" >> ~/.kube/config
-        echo "  cluster:" >> ~/.kube/config
-        echo "    server: ${K8S_SERVER}" >> ~/.kube/config
-        echo "    certificate-authority-data: ${K8S_CA_CRT}" >> ~/.kube/config
-        echo "contexts:" >> ~/.kube/config
-        echo "- name: oke" >> ~/.kube/config
-        echo "  context:" >> ~/.kube/config
-        echo "    cluster: oke" >> ~/.kube/config
-        echo "    user: github" >> ~/.kube/config
-        echo "current-context: oke" >> ~/.kube/config
-        echo "users:" >> ~/.kube/config
-        echo "- name: github" >> ~/.kube/config
-        echo "  user:" >> ~/.kube/config
-        echo "    token: ${K8S_TOKEN}" >> ~/.kube/config
-        chmod 600 ~/.kube/config
-
-    # -------------------------
-    # 7. Test cluster access
-    # -------------------------
-    - name: Test OKE Connection
+    - name: Test OKE
       run: |
         kubectl version --client
         kubectl get nodes
         kubectl get ns
-
-    # -------------------------
-    # 8. Deploy to OKE
-    # -------------------------
-    - name: Deploy Application
-      run: |
-        kubectl apply -f k8s/deployment.yaml
-        kubectl apply -f k8s/service.yaml
-
-    # -------------------------
-    # 9. Verify Deployment
-    # -------------------------
-    - name: Verify Deployment
-      run: |
-        kubectl rollout status deployment/train1-app -n train1
-        kubectl get pods -n train1
-        kubectl get svc -n train1
